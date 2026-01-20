@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament Payment Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background-color: #000; min-height: 100vh; color: white; font-family: sans-serif; }
+        .bg-img {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://ik.imagekit.io/shaban/SHABAN-1768842810403_cZq3j6BSd.jpg');
+            background-size: cover; background-position: center; opacity: 0.75; z-index: -1;
+        }
+        .glass {
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .input-field {
+            background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white; width: 100%; padding: 12px; border-radius: 12px; outline: none;
+        }
+        .input-field:focus { border-color: #f97316; }
+        .btn-orange {
+            background: #f97316; color: white; font-weight: 900; padding: 14px;
+            width: 100%; border-radius: 16px; text-transform: uppercase; letter-spacing: 1px;
+            transition: 0.3s; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+        }
+        .btn-orange:hover { background: #ea580c; transform: translateY(-2px); }
+        .anim-up { animation: slideUp 0.6s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+    <div class="bg-img"></div>
+
+    <!-- Notification Box -->
+    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 hidden bg-orange-600 text-white px-6 py-3 rounded-full shadow-2xl font-bold"></div>
+
+    <div class="min-h-screen flex items-center justify-center p-4">
+        
+        <!-- 1. AUTH SECTION (Signup/Login) -->
+        <div id="authSection" class="w-full max-w-md glass p-8 rounded-[2rem] anim-up">
+            <div class="text-center mb-8">
+                <h2 class="text-xs font-black text-white/60 tracking-[0.4em] uppercase mb-1">Free Fire</h2>
+                <h1 class="text-3xl font-black text-orange-500 italic uppercase">Khushu Army</h1>
+                <p class="text-slate-400 text-xs mt-2 font-bold uppercase tracking-wider">Tournament Payment Gateway</p>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex bg-black/40 p-1 rounded-xl mb-6">
+                <button onclick="toggleAuth('signup')" id="tabSign" class="flex-1 py-2 rounded-lg font-bold text-sm bg-orange-600 text-white transition-all">Register</button>
+                <button onclick="toggleAuth('login')" id="tabLog" class="flex-1 py-2 rounded-lg font-bold text-sm text-slate-400 hover:text-white transition-all">Check Status</button>
+            </div>
+
+            <!-- Signup Form -->
+            <form id="signupForm" class="space-y-4">
+                <input type="text" id="sName" placeholder="Full Name" required class="input-field font-bold">
+                <input type="tel" id="sPhone" placeholder="Phone Number (Login ID)" required class="input-field font-bold">
+                <input type="password" id="sPass" placeholder="Create Password" required class="input-field font-bold">
+                <button type="submit" class="btn-orange">Create Account</button>
+            </form>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="space-y-4 hidden">
+                <input type="tel" id="lPhone" placeholder="Phone Number" required class="input-field font-bold">
+                <input type="password" id="lPass" placeholder="Password" required class="input-field font-bold">
+                <button type="submit" class="btn-orange">Check Status</button>
+            </form>
+        </div>
+
+        <!-- 2. PAYMENT & STATUS DASHBOARD -->
+        <div id="dashboardSection" class="w-full max-w-lg glass p-6 md:p-8 rounded-[2rem] hidden anim-up">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-black text-white italic uppercase">Payment Panel</h2>
+                <button onclick="location.reload()" class="text-xs bg-white/10 px-3 py-1 rounded-lg hover:bg-red-500/50 transition">Logout</button>
+            </div>
+
+            <!-- IF PENDING: Payment View -->
+            <div id="pendingView" class="hidden">
+                <div class="bg-gradient-to-r from-orange-900/40 to-black/40 p-6 rounded-2xl border border-orange-500/30 mb-6 text-center">
+                    <p class="text-xs text-orange-400 font-bold uppercase tracking-widest mb-2">Send Payment To</p>
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=03001234567" class="w-32 h-32 mx-auto rounded-lg mb-3 border-4 border-white">
+                    <h3 class="text-2xl font-black text-white">0300-1234567</h3>
+                    <p class="text-sm font-bold text-slate-300">Easypaisa - Shaban Ali</p>
+                </div>
+
+                <form id="paymentForm" class="space-y-4">
+                    <h3 class="text-sm font-black text-white uppercase border-l-4 border-orange-500 pl-3">Verify Transaction</h3>
+                    
+                    <select id="pMethod" class="input-field font-bold">
+                        <option value="Easypaisa">Easypaisa</option>
+                        <option value="Jazzcash">Jazzcash</option>
+                        <option value="Bank">Bank Transfer</option>
+                    </select>
+
+                    <input type="text" id="pSender" placeholder="Sender Account Name" required class="input-field font-bold">
+                    <input type="text" id="pTrx" placeholder="TRX ID (Transaction ID)" required class="input-field font-bold">
+                    
+                    <div class="relative">
+                        <label class="block text-xs font-bold text-slate-400 mb-2 uppercase">Upload Screenshot</label>
+                        <input type="file" id="pScreen" accept="image/*" required class="input-field text-xs">
+                    </div>
+
+                    <button type="submit" id="payBtn" class="btn-orange mt-4">Submit Verification</button>
+                </form>
+            </div>
+
+            <!-- IF REVIEWING: Wait View -->
+            <div id="reviewView" class="hidden text-center py-10">
+                <div class="w-20 h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+                    <svg class="w-10 h-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <h2 class="text-2xl font-black text-white uppercase mb-2">Under Review</h2>
+                <p class="text-slate-400 text-sm px-4">Aapki payment check ki ja rahi hai. Admin verify kar ke aapko ID/Pass assign karega.</p>
+                <button onclick="checkUserStatus()" class="mt-8 bg-white/10 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-white/20">Refresh Status</button>
+            </div>
+
+            <!-- IF APPROVED: Success View -->
+            <div id="approvedView" class="hidden text-center">
+                <div class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-10 h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                </div>
+                <h2 class="text-2xl font-black text-white uppercase mb-1">Registration Approved!</h2>
+                <p class="text-slate-400 text-xs uppercase tracking-widest mb-8">Here are your credentials</p>
+
+                <div class="bg-black/40 p-6 rounded-2xl border border-green-500/30 mb-6 space-y-4">
+                    <div>
+                        <p class="text-[10px] text-slate-500 font-black uppercase">Assigned User ID</p>
+                        <h3 id="assignedID" class="text-3xl font-black text-orange-500 italic">USER01</h3>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-slate-500 font-black uppercase">Password</p>
+                        <h3 id="assignedPass" class="text-xl font-bold text-white font-mono">****</h3>
+                    </div>
+                </div>
+
+                <!-- Invisible textarea used for legacy clipboard fallback -->
+                <textarea id="copyHelper" style="position: absolute; left: -9999px;"></textarea>
+
+                <button onclick="openSquadPortal()" class="btn-orange animate-pulse">
+                    Fill Squad Portal Now
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block ml-2 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = "https://psiypllbqopudppugaxe.supabase.co"; 
+        const SB_KEY = "sb_publishable_PsL-7tSFu4EQU5ZHQgO6UA_Segl7g_e";
+        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+        let currentUser = null;
+        let assignedPassword = null;
+
+        function toast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 3000);
+        }
+
+        function toggleAuth(type) {
+            if(type === 'signup') {
+                document.getElementById('signupForm').classList.remove('hidden');
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('tabSign').className = "flex-1 py-2 rounded-lg font-bold text-sm bg-orange-600 text-white transition-all";
+                document.getElementById('tabLog').className = "flex-1 py-2 rounded-lg font-bold text-sm text-slate-400 hover:text-white transition-all";
+            } else {
+                document.getElementById('signupForm').classList.add('hidden');
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('tabLog').className = "flex-1 py-2 rounded-lg font-bold text-sm bg-orange-600 text-white transition-all";
+                document.getElementById('tabSign').className = "flex-1 py-2 rounded-lg font-bold text-sm text-slate-400 hover:text-white transition-all";
+            }
+        }
+
+        document.getElementById('signupForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('sName').value;
+            const phone = document.getElementById('sPhone').value;
+            const pass = document.getElementById('sPass').value;
+
+            const { data: exists } = await supabaseClient.from('payment_users').select('*').eq('phone_number', phone).single();
+            if(exists) return toast("Number already registered! Please Login.");
+
+            const { data, error } = await supabaseClient.from('payment_users').insert([{
+                full_name: name, phone_number: phone, password: pass
+            }]).select().single();
+
+            if(error) { toast("Error: " + error.message); }
+            else {
+                currentUser = data;
+                showDashboard();
+            }
+        };
+
+        document.getElementById('loginForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const phone = document.getElementById('lPhone').value;
+            const pass = document.getElementById('lPass').value;
+
+            const { data, error } = await supabaseClient.from('payment_users').select('*').eq('phone_number', phone).eq('password', pass).single();
+
+            if(error || !data) { toast("Invalid Credentials!"); }
+            else {
+                currentUser = data;
+                showDashboard();
+            }
+        };
+
+        function showDashboard() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            checkUserStatus();
+        }
+
+        async function checkUserStatus() {
+            const { data } = await supabaseClient.from('payment_users').select('*').eq('id', currentUser.id).single();
+            currentUser = data;
+
+            const status = currentUser.status;
+            document.getElementById('pendingView').classList.add('hidden');
+            document.getElementById('reviewView').classList.add('hidden');
+            document.getElementById('approvedView').classList.add('hidden');
+
+            if(status === 'pending') {
+                if(currentUser.trx_id) {
+                    document.getElementById('reviewView').classList.remove('hidden');
+                } else {
+                    document.getElementById('pendingView').classList.remove('hidden');
+                }
+            } else if (status === 'approved') {
+                document.getElementById('approvedView').classList.remove('hidden');
+                document.getElementById('assignedID').innerText = currentUser.assigned_auth_id;
+                fetchAssignedPass(currentUser.assigned_auth_id);
+            }
+        }
+
+        async function fetchAssignedPass(authId) {
+            const { data } = await supabaseClient.from('squad_auth').select('password').eq('user_id', authId).single();
+            if(data) {
+                assignedPassword = data.password;
+                document.getElementById('assignedPass').innerText = data.password;
+            }
+        }
+
+        document.getElementById('paymentForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('payBtn');
+            btn.disabled = true; btn.innerText = "Uploading...";
+
+            const file = document.getElementById('pScreen').files[0];
+            const sender = document.getElementById('pSender').value;
+            const trx = document.getElementById('pTrx').value;
+            const method = document.getElementById('pMethod').value;
+
+            const fileName = `proof_${Date.now()}_${currentUser.phone_number}`;
+            const { data: imgData, error: imgError } = await supabaseClient.storage.from('payment_proofs').upload(fileName, file);
+
+            if(imgError) {
+                toast("Upload Failed: " + imgError.message);
+                btn.disabled = false; btn.innerText = "Submit Verification";
+                return;
+            }
+
+            const imgUrl = `https://psiypllbqopudppugaxe.supabase.co/storage/v1/object/public/payment_proofs/${fileName}`;
+
+            const { error } = await supabaseClient.from('payment_users').update({
+                payment_method: method, account_name: sender, trx_id: trx, screenshot_url: imgUrl
+            }).eq('id', currentUser.id);
+
+            if(!error) {
+                toast("Submitted Successfully!");
+                checkUserStatus();
+            } else {
+                toast("Database Error");
+            }
+        };
+
+        // FIXED CLIPBOARD LOGIC FOR IFRAMES
+        window.openSquadPortal = () => {
+            const u = currentUser.assigned_auth_id;
+            const p = assignedPassword;
+            const targetUrl = `https://userspotral.vercel.app/?uid=${u}&pass=${p}`;
+            
+            // Legacy fallback using document.execCommand('copy') which is more reliable in frames
+            const copyHelper = document.getElementById('copyHelper');
+            copyHelper.value = `ID: ${u}\nPass: ${p}`;
+            copyHelper.select();
+            
+            try {
+                document.execCommand('copy');
+                toast("ID/Pass Copy Don! Portal di open...");
+            } catch (err) {
+                console.error("Copy fail", err);
+            }
+            
+            setTimeout(() => {
+                window.open(targetUrl, '_blank');
+            }, 800);
+        };
+    </script>
+</body>
+</html>
