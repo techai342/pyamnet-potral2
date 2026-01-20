@@ -10,7 +10,7 @@
         body { background-color: #000; min-height: 100vh; color: white; font-family: sans-serif; }
         .bg-img {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url('https://ik.imagekit.io/shaban/SHABAN-1768842810403_cZq3j6BSd.jpg');
+            background-image: url('https://ik.imagekit.io/shaban/SHABAN-1768916053366_fxqIWiUP-.jpg');
             background-size: cover; background-position: center; opacity: 0.75; z-index: -1;
         }
         .glass {
@@ -80,26 +80,54 @@
             <!-- IF PENDING: Payment View -->
             <div id="pendingView" class="hidden">
                 <div class="bg-gradient-to-r from-orange-900/40 to-black/40 p-6 rounded-2xl border border-orange-500/30 mb-6 text-center">
-                    <p class="text-xs text-orange-400 font-bold uppercase tracking-widest mb-2">Send Payment To</p>
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=03001234567" class="w-32 h-32 mx-auto rounded-lg mb-3 border-4 border-white">
-                    <h3 class="text-2xl font-black text-white">0300-1234567</h3>
-                    <p class="text-sm font-bold text-slate-300">Easypaisa - Shaban Ali</p>
+                    <p class="text-xs text-orange-400 font-bold uppercase tracking-widest mb-2">Bank Transfer Details</p>
+                    
+                    <!-- Bank Account QR Code -->
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Bank%20Details%3A%0AAccount%20Holder%3A%20Muhammad%20Fahad%20Ali%0ABank%3A%20Askari%20Bank%20Limited%0AIBAN%3A%20PK34ASCM0007060200020269%0AAC%2FNo%3A%2007060200020269" 
+                         class="w-32 h-32 mx-auto rounded-lg mb-3 border-4 border-white">
+                    
+                    <h3 class="text-2xl font-black text-white">PK34ASCM0007060200020269</h3>
+                    <p class="text-sm font-bold text-slate-300">IBAN - Askari Bank Limited</p>
+                    
+                    <!-- Bank Account Details -->
+                    <div class="mt-4 text-left bg-black/30 p-4 rounded-lg text-sm space-y-2">
+                        <div class="flex">
+                            <span class="text-slate-400 font-bold w-36">Account Holder:</span>
+                            <span class="text-white font-bold">Muhammad Fahad Ali</span>
+                        </div>
+                        <div class="flex">
+                            <span class="text-slate-400 font-bold w-36">Bank Name:</span>
+                            <span class="text-white font-bold">Askari Bank Limited</span>
+                        </div>
+                        <div class="flex">
+                            <span class="text-slate-400 font-bold w-36">Branch:</span>
+                            <span class="text-white font-bold">IBB Circular Road Branch, Lahore</span>
+                        </div>
+                        <div class="flex">
+                            <span class="text-slate-400 font-bold w-36">Account No:</span>
+                            <span class="text-white font-bold">07060200020269</span>
+                        </div>
+                        <div class="flex">
+                            <span class="text-slate-400 font-bold w-36">IBAN:</span>
+                            <span class="text-white font-bold text-xs">PK34ASCM0007060200020269</span>
+                        </div>
+                    </div>
                 </div>
 
                 <form id="paymentForm" class="space-y-4">
                     <h3 class="text-sm font-black text-white uppercase border-l-4 border-orange-500 pl-3">Verify Transaction</h3>
                     
                     <select id="pMethod" class="input-field font-bold">
+                        <option value="Bank Transfer">Bank Transfer</option>
                         <option value="Easypaisa">Easypaisa</option>
                         <option value="Jazzcash">Jazzcash</option>
-                        <option value="Bank">Bank Transfer</option>
                     </select>
 
-                    <input type="text" id="pSender" placeholder="Sender Account Name" required class="input-field font-bold">
-                    <input type="text" id="pTrx" placeholder="TRX ID (Transaction ID)" required class="input-field font-bold">
+                    <input type="text" id="pSender" placeholder="Your Account Name" required class="input-field font-bold">
+                    <input type="text" id="pTrx" placeholder="Transaction Reference / TRX ID" required class="input-field font-bold">
                     
                     <div class="relative">
-                        <label class="block text-xs font-bold text-slate-400 mb-2 uppercase">Upload Screenshot</label>
+                        <label class="block text-xs font-bold text-slate-400 mb-2 uppercase">Upload Payment Screenshot</label>
                         <input type="file" id="pScreen" accept="image/*" required class="input-field text-xs">
                     </div>
 
