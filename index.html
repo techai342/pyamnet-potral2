@@ -3,332 +3,766 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tournament Payment Portal</title>
+    <title>Kachu ARMY - Tournament Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background-color: #000; min-height: 100vh; color: white; font-family: sans-serif; }
-        .bg-img {
+        :root { --ios-blur: blur(25px); }
+        body { background-color: #000; min-height: 100vh; margin: 0; padding: 0; }
+        .bg-img { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url('https://ik.imagekit.io/shaban/SHABAN-1768916053366_fxqIWiUP-.jpg');
             background-size: cover; background-position: center; opacity: 0.75; z-index: -1;
         }
-        .glass {
+        .bg-fixed-img {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://ik.imagekit.io/shaban/SHABAN-1768916053366_fxqIWiUP-.jpg');
+            background-size: cover; background-position: center; opacity: 0.75; z-index: -1;
+        }
+        .glass-card {
             background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border-radius: 2rem;
+        }
+        .glass-card-ios { 
+            background: rgba(255, 255, 255, 0.08); backdrop-filter: var(--ios-blur); 
+            border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
         }
         .input-field {
-            background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white; width: 100%; padding: 12px; border-radius: 12px; outline: none;
+            background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white; border-radius: 1rem; transition: 0.3s;
         }
-        .input-field:focus { border-color: #f97316; }
-        .btn-orange {
-            background: #f97316; color: white; font-weight: 900; padding: 14px;
-            width: 100%; border-radius: 16px; text-transform: uppercase; letter-spacing: 1px;
-            transition: 0.3s; box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+        .input-field:focus { border-color: #f97316; outline: none; background: rgba(0, 0, 0, 0.7); }
+        .input-ios { 
+            background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); 
+            color: white; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .btn-orange:hover { background: #ea580c; transform: translateY(-2px); }
-        .anim-up { animation: slideUp 0.6s ease-out; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .input-ios:focus { 
+            border-color: #f97316; background: rgba(0, 0, 0, 0.6);
+            outline: none; transform: translateY(-2px);
+        }
+        .rgb-text {
+            text-shadow: 0 0 10px rgba(249, 115, 22, 0.8), 0 0 20px rgba(59, 130, 246, 0.5);
+            animation: pulse 3s infinite;
+        }
+        .rgb-glow {
+            text-shadow: 0 0 8px rgba(249, 115, 22, 0.8), 0 0 20px rgba(59, 130, 246, 0.4), 0 0 30px rgba(249, 115, 22, 0.2);
+            animation: rgbShift 4s infinite alternate;
+        }
+        @keyframes pulse { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(15deg); } }
+        @keyframes rgbShift { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(15deg); } }
+        @keyframes iosReveal { 
+            from { opacity: 0; transform: scale(0.97) translateY(30px); } 
+            to { opacity: 1; transform: scale(1) translateY(0); } 
+        }
+        .animate-ios { animation: iosReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .hidden { display: none; }
+        .copy-btn {
+            background: rgba(249, 115, 22, 0.1);
+            border: 1px solid rgba(249, 115, 22, 0.3);
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #f97316;
+            transition: all 0.2s;
+        }
+        .copy-btn:active { transform: scale(0.9); background: #f97316; color: white; }
     </style>
 </head>
-<body class="overflow-x-hidden">
-    <div class="bg-img"></div>
+<body class="font-sans text-white">
+    <!-- Main Tournament Payment Portal -->
+    <div id="mainPortal" class="min-h-screen">
+        <div class="bg-img"></div>
 
-    <!-- Notification Box -->
-    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 hidden bg-orange-600 text-white px-6 py-3 rounded-full shadow-2xl font-bold"></div>
-
-    <div class="min-h-screen flex items-center justify-center p-4">
-        
-        <!-- 1. AUTH SECTION (Signup/Login) -->
-        <div id="authSection" class="w-full max-w-md glass p-8 rounded-[2rem] anim-up">
-            <div class="text-center mb-8">
-                <h2 class="text-xs font-black text-white/60 tracking-[0.4em] uppercase mb-1">Free Fire</h2>
-                <h1 class="text-3xl font-black text-orange-500 italic uppercase">Khushu Army</h1>
-                <p class="text-slate-400 text-xs mt-2 font-bold uppercase tracking-wider">Tournament Payment Gateway</p>
-            </div>
-
-            <!-- Tabs -->
-            <div class="flex bg-black/40 p-1 rounded-xl mb-6">
-                <button onclick="toggleAuth('signup')" id="tabSign" class="flex-1 py-2 rounded-lg font-bold text-sm bg-orange-600 text-white transition-all">Register</button>
-                <button onclick="toggleAuth('login')" id="tabLog" class="flex-1 py-2 rounded-lg font-bold text-sm text-slate-400 hover:text-white transition-all">Check Status</button>
-            </div>
-
-            <!-- Signup Form -->
-            <form id="signupForm" class="space-y-4">
-                <input type="text" id="sName" placeholder="Full Name" required class="input-field font-bold">
-                <input type="tel" id="sPhone" placeholder="Phone Number (Login ID)" required class="input-field font-bold">
-                <input type="password" id="sPass" placeholder="Create Password" required class="input-field font-bold">
-                <button type="submit" class="btn-orange">Create Account</button>
-            </form>
-
-            <!-- Login Form -->
-            <form id="loginForm" class="space-y-4 hidden">
-                <input type="tel" id="lPhone" placeholder="Phone Number" required class="input-field font-bold">
-                <input type="password" id="lPass" placeholder="Password" required class="input-field font-bold">
-                <button type="submit" class="btn-orange">Check Status</button>
-            </form>
+        <!-- Logout Button (Floating top right) -->
+        <div id="navBar" class="fixed top-4 right-4 z-50 hidden">
+            <button onclick="handleLogout()" class="bg-red-600/20 hover:bg-red-600 border border-red-500/50 px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all shadow-lg">Logout</button>
         </div>
 
-        <!-- 2. PAYMENT & STATUS DASHBOARD -->
-        <div id="dashboardSection" class="w-full max-w-lg glass p-6 md:p-8 rounded-[2rem] hidden anim-up">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-black text-white italic uppercase">Payment Panel</h2>
-                <button onclick="location.reload()" class="text-xs bg-white/10 px-3 py-1 rounded-lg hover:bg-red-500/50 transition">Logout</button>
+        <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 hidden px-6 py-3 rounded-xl font-bold text-center shadow-2xl text-white"></div>
+
+        <div class="min-h-screen flex items-center justify-center p-4">
+            
+            <!-- 1. AUTH SCREEN -->
+            <div id="authScreen" class="glass-card p-8 w-full max-w-md text-center">
+                <h1 class="text-3xl font-black text-orange-500 rgb-text italic mb-2 uppercase">kachu ARMY</h1>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">Tournament Gate Pass</p>
+
+                <div id="signupForm" class="space-y-4">
+                    <input type="text" id="regName" placeholder="Full Name" class="w-full p-4 input-field font-bold">
+                    <input type="tel" id="regPhone" placeholder="Phone Number (Login ID)" class="w-full p-4 input-field font-bold">
+                    <input type="password" id="regPass" placeholder="Create Password" class="w-full p-4 input-field font-bold">
+                    <button onclick="handleSignup()" class="w-full bg-orange-600 hover:bg-orange-500 py-4 rounded-xl font-black uppercase tracking-widest transition-all">Register Now</button>
+                    <p class="text-xs mt-4 text-slate-400 cursor-pointer hover:text-white" onclick="toggleAuth('login')">Already registered? Login</p>
+                </div>
+
+                <div id="loginForm" class="space-y-4 hidden">
+                    <input type="tel" id="loginPhone" placeholder="Phone Number" class="w-full p-4 input-field font-bold">
+                    <input type="password" id="loginPass" placeholder="Password" class="w-full p-4 input-field font-bold">
+                    <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-black uppercase tracking-widest transition-all">Login</button>
+                    <p class="text-xs mt-4 text-slate-400 cursor-pointer hover:text-white" onclick="toggleAuth('signup')">New User? Register</p>
+                </div>
             </div>
 
-            <!-- IF PENDING: Payment View -->
-            <div id="pendingView" class="hidden">
-                <div class="bg-gradient-to-r from-orange-900/40 to-black/40 p-6 rounded-2xl border border-orange-500/30 mb-6 text-center">
-                    <p class="text-xs text-orange-400 font-bold uppercase tracking-widest mb-2">Bank Transfer Details</p>
-                    
-                    <!-- Bank Account QR Code -->
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Bank%20Details%3A%0AAccount%20Holder%3A%20Muhammad%20Fahad%20Ali%0ABank%3A%20Askari%20Bank%20Limited%0AIBAN%3A%20PK34ASCM0007060200020269%0AAC%2FNo%3A%2007060200020269" 
-                         class="w-32 h-32 mx-auto rounded-lg mb-3 border-4 border-white">
-                    
-                    <h3 class="text-2xl font-black text-white">PK34ASCM0007060200020269</h3>
-                    <p class="text-sm font-bold text-slate-300">IBAN - Askari Bank Limited</p>
-                    
-                    <!-- Bank Account Details -->
-                    <div class="mt-4 text-left bg-black/30 p-4 rounded-lg text-sm space-y-2">
-                        <div class="flex">
-                            <span class="text-slate-400 font-bold w-36">Account Holder:</span>
-                            <span class="text-white font-bold">Muhammad Fahad Ali</span>
-                        </div>
-                        <div class="flex">
-                            <span class="text-slate-400 font-bold w-36">Bank Name:</span>
-                            <span class="text-white font-bold">Askari Bank Limited</span>
-                        </div>
-                        <div class="flex">
-                            <span class="text-slate-400 font-bold w-36">Branch:</span>
-                            <span class="text-white font-bold">IBB Circular Road Branch, Lahore</span>
-                        </div>
-                        <div class="flex">
-                            <span class="text-slate-400 font-bold w-36">Account No:</span>
-                            <span class="text-white font-bold">07060200020269</span>
-                        </div>
-                        <div class="flex">
-                            <span class="text-slate-400 font-bold w-36">IBAN:</span>
-                            <span class="text-white font-bold text-xs">PK34ASCM0007060200020269</span>
+            <!-- 2. PAYMENT SUBMISSION SCREEN -->
+            <div id="paymentScreen" class="glass-card p-8 w-full max-w-lg hidden">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-black text-white uppercase italic">Bank Transfer Details</h2>
+                    <p class="text-slate-400 text-xs mt-1">Send Payment to Bank Account</p>
+                </div>
+
+                <!-- Bank Account Details -->
+                <div class="bg-white/5 p-6 rounded-2xl mb-6 border border-white/10 text-left">
+                    <p class="text-[10px] text-orange-500 font-black uppercase tracking-widest mb-4">Account Information</p>
+                    <div class="space-y-3">
+                        <div class="flex"><span class="text-xs text-slate-400 font-bold w-40">Account Holder:</span><span class="text-sm font-bold text-white">Muhammad Fahad Ali</span></div>
+                        <div class="flex"><span class="text-xs text-slate-400 font-bold w-40">Bank Name:</span><span class="text-sm font-bold text-white">Askari Bank Limited</span></div>
+                        <div class="flex"><span class="text-xs text-slate-400 font-bold w-40">Branch:</span><span class="text-sm font-bold text-white">IBB Circular Road Branch, Lahore</span></div>
+                        <div class="flex"><span class="text-xs text-slate-400 font-bold w-40">Account Number:</span><span class="text-sm font-bold text-white">07060200020269</span></div>
+                        <div class="flex"><span class="text-xs text-slate-400 font-bold w-40">IBAN:</span><span class="text-sm font-bold text-white break-all">PK34ASCM0007060200020269</span></div>
+                    </div>
+                    <div class="mt-6 pt-6 border-t border-white/10 text-center">
+                        <p class="text-xs text-slate-400 mb-2">Scan QR to get bank details</p>
+                        <div class="bg-white p-2 w-32 h-32 mx-auto rounded-lg flex items-center justify-center">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Bank%20Details%3A%0AAccount%20Holder%3A%20Muhammad%20Fahad%20Ali%0ABank%3A%20Askari%20Bank%20Limited%0AIBAN%3A%20PK34ASCM0007060200020269%0AAC%2FNo%3A%2007060200020269" alt="QR Code" class="w-full h-full object-cover">
                         </div>
                     </div>
                 </div>
 
-                <form id="paymentForm" class="space-y-4">
-                    <h3 class="text-sm font-black text-white uppercase border-l-4 border-orange-500 pl-3">Verify Transaction</h3>
-                    
-                    <select id="pMethod" class="input-field font-bold">
+                <form id="payForm" class="space-y-4">
+                    <select id="payMethod" class="w-full p-4 input-field font-bold bg-black">
                         <option value="Bank Transfer">Bank Transfer</option>
                         <option value="Easypaisa">Easypaisa</option>
-                        <option value="Jazzcash">Jazzcash</option>
+                        <option value="JazzCash">JazzCash</option>
                     </select>
-
-                    <input type="text" id="pSender" placeholder="Your Account Name" required class="input-field font-bold">
-                    <input type="text" id="pTrx" placeholder="Transaction Reference / TRX ID" required class="input-field font-bold">
-                    
-                    <div class="relative">
-                        <label class="block text-xs font-bold text-slate-400 mb-2 uppercase">Upload Payment Screenshot</label>
-                        <input type="file" id="pScreen" accept="image/*" required class="input-field text-xs">
+                    <input type="text" id="senderName" placeholder="Your Account Name" class="w-full p-4 input-field font-bold" required>
+                    <input type="text" id="trxId" placeholder="Transaction Reference / TRX ID" class="w-full p-4 input-field font-bold" required>
+                    <div class="relative border-2 border-dashed border-slate-600 rounded-xl p-4 text-center cursor-pointer hover:border-orange-500 transition-all">
+                        <input type="file" id="screenshot" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="previewImage(this)">
+                        <p id="fileLabel" class="text-xs font-bold text-slate-400 uppercase">Upload Payment Screenshot</p>
+                        <img id="imgPrev" class="hidden mt-2 max-h-32 mx-auto rounded-lg">
                     </div>
-
-                    <button type="submit" id="payBtn" class="btn-orange mt-4">Submit Verification</button>
+                    <button type="submit" id="submitPayBtn" class="w-full bg-green-600 hover:bg-green-500 py-4 rounded-xl font-black uppercase tracking-widest transition-all">Verify Payment</button>
                 </form>
             </div>
 
-            <!-- IF REVIEWING: Wait View -->
-            <div id="reviewView" class="hidden text-center py-10">
-                <div class="w-20 h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-                    <svg class="w-10 h-10 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                </div>
-                <h2 class="text-2xl font-black text-white uppercase mb-2">Under Review</h2>
-                <p class="text-slate-400 text-sm px-4">Aapki payment check ki ja rahi hai. Admin verify kar ke aapko ID/Pass assign karega.</p>
-                <button onclick="checkUserStatus()" class="mt-8 bg-white/10 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-white/20">Refresh Status</button>
+            <!-- 3. PENDING SCREEN -->
+            <div id="pendingScreen" class="glass-card p-10 w-full max-w-md text-center hidden">
+                <div class="w-20 h-20 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+                <h2 class="text-2xl font-black text-white uppercase mb-2">Payment Under Review</h2>
+                <p class="text-slate-400 text-sm font-bold">Admin is checking your payment. No need to refresh, we will save your record.</p>
+                <button onclick="checkLatestStatus()" class="mt-8 bg-white/10 hover:bg-white/20 px-6 py-3 rounded-xl font-bold text-xs uppercase">Check Status Now</button>
             </div>
 
-            <!-- IF APPROVED: Success View -->
-            <div id="approvedView" class="hidden text-center">
-                <div class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg class="w-10 h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+            <!-- 4. SUCCESS SCREEN -->
+            <div id="successScreen" class="glass-card p-8 w-full max-w-md text-center hidden relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-orange-500"></div>
+                <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_#22c55e]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7" /></svg>
                 </div>
-                <h2 class="text-2xl font-black text-white uppercase mb-1">Registration Approved!</h2>
-                <p class="text-slate-400 text-xs uppercase tracking-widest mb-8">Here are your credentials</p>
-
-                <div class="bg-black/40 p-6 rounded-2xl border border-green-500/30 mb-6 space-y-4">
-                    <div>
-                        <p class="text-[10px] text-slate-500 font-black uppercase">Assigned User ID</p>
-                        <h3 id="assignedID" class="text-3xl font-black text-orange-500 italic">USER01</h3>
+                <h2 class="text-3xl font-black text-white italic uppercase mb-1">Access Granted</h2>
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-6">Your Slot is Confirmed!</p>
+                <div class="bg-black/40 p-6 rounded-2xl border border-white/10 mb-6 text-left relative">
+                    <p class="text-[10px] font-black text-orange-500 uppercase mb-4">Assigned Credentials</p>
+                    <div class="flex justify-between items-center mb-4 pb-4 border-b border-white/5">
+                        <div><span class="text-[10px] text-slate-500 block uppercase">Username</span><span id="displayUser" class="font-mono font-black text-xl text-white">---</span></div>
+                        <button onclick="copyField('displayUser', 'Username')" class="copy-btn">COPY</button>
                     </div>
-                    <div>
-                        <p class="text-[10px] text-slate-500 font-black uppercase">Password</p>
-                        <h3 id="assignedPass" class="text-xl font-bold text-white font-mono">****</h3>
+                    <div class="flex justify-between items-center">
+                        <div><span class="text-[10px] text-slate-500 block uppercase">Password</span><span id="displayPass" class="font-mono font-black text-xl text-white tracking-widest">---</span></div>
+                        <button onclick="copyField('displayPass', 'Password')" class="copy-btn">COPY</button>
                     </div>
+                    <input type="hidden" id="hiddenUser"><input type="hidden" id="hiddenPass">
                 </div>
-
-                <!-- Invisible textarea used for legacy clipboard fallback -->
-                <textarea id="copyHelper" style="position: absolute; left: -9999px;"></textarea>
-
-                <button onclick="openSquadPortal()" class="btn-orange animate-pulse">
-                    Fill Squad Portal Now
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block ml-2 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                </button>
+                <button onclick="goToSquadPortal()" class="w-full bg-orange-600 hover:bg-orange-500 py-5 rounded-2xl font-black uppercase text-lg shadow-xl shadow-orange-600/20 active:scale-95 transition-all flex items-center justify-center gap-2">Access Squad Portal</button>
             </div>
+        </div>
+    </div>
 
+    <!-- Squad Registration Portal (Initially Hidden) -->
+    <div id="squadPortal" class="hidden min-h-screen font-sans text-slate-200 antialiased overflow-x-hidden">
+        <div class="bg-fixed-img"></div>
+
+        <!-- Status Alerts -->
+        <div id="statusBox" class="fixed top-6 inset-x-6 md:inset-x-auto md:right-6 md:w-80 z-[100] hidden p-6 rounded-[2rem] shadow-2xl text-white font-bold transition-all text-center backdrop-blur-xl"></div>
+
+        <!-- Login Section -->
+        <div id="loginSection" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <div class="glass-card-ios p-8 md:p-12 w-full max-w-md animate-ios">
+                <div class="text-center mb-10">
+                    <h2 class="text-xs font-black text-white/60 tracking-[0.6em] uppercase mb-1">Free Fire</h2>
+                    <h1 class="text-4xl font-black text-orange-500 rgb-glow italic tracking-tighter">Kachu ARMY</h1>
+                    <p class="text-slate-400 mt-6 text-[10px] font-bold uppercase tracking-widest border-t border-white/10 pt-4">Squad Portal Login</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <input type="text" id="authId" placeholder="AUTH ID" class="w-full p-5 input-ios rounded-3xl font-bold uppercase tracking-widest placeholder:text-slate-600">
+                    <input type="password" id="authPass" placeholder="PASSWORD" class="w-full p-5 input-ios rounded-3xl font-bold placeholder:text-slate-600">
+                    <button onclick="handleSquadLogin()" id="loginBtn" class="w-full bg-orange-500 hover:bg-orange-400 text-white font-black py-5 rounded-3xl shadow-xl active:scale-95 transition-all mt-2 text-lg uppercase tracking-wider">
+                        Verify Identity
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Section -->
+        <div id="mainSection" class="hidden p-4 md:p-10 max-w-5xl mx-auto pb-24">
+            <header class="flex justify-between items-start mb-14 animate-ios">
+                <div>
+                    <h2 class="text-xs font-black text-white/50 tracking-[0.5em] uppercase mb-1">Free Fire</h2>
+                    <h1 class="text-4xl font-black text-orange-500 rgb-glow italic">KHUSHU ARMY</h1>
+                    <div class="mt-3">
+                        <span id="currentUserDisplay" class="text-[9px] font-black text-white/40 tracking-[0.2em] bg-white/5 px-4 py-1.5 rounded-full uppercase border border-white/5">USER01</span>
+                    </div>
+                </div>
+                <button onclick="goBackToMain()" class="bg-white/5 hover:bg-red-500/20 text-white/70 px-6 py-3 rounded-2xl text-[10px] font-black transition-all backdrop-blur-md border border-white/10 uppercase tracking-widest">Back to Main</button>
+            </header>
+
+            <form id="regForm" class="space-y-8 animate-ios" style="animation-delay: 0.1s">
+                <!-- Squad Identity -->
+                <div class="glass-card-ios p-8 border-orange-500/20">
+                    <label class="text-[10px] font-black text-orange-400 uppercase tracking-[0.4em] mb-4 block">Team Name</label>
+                    <input type="text" name="squad_name" required class="w-full p-6 input-ios rounded-[2rem] font-black text-3xl placeholder:text-slate-800 uppercase italic" placeholder="ENTER SQUAD NAME">
+                </div>
+
+                <!-- Leader Info -->
+                <div class="glass-card-ios p-8">
+                    <h3 class="text-sm font-black text-white mb-8 uppercase flex items-center gap-3 italic">
+                        <span class="w-2 h-6 bg-orange-500 rounded-full shadow-[0_0_10px_#f97316]"></span> Squad Leader (P1)
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-slate-500 font-black ml-4 uppercase">Full Name</label>
+                            <input type="text" name="leader_name" required class="w-full p-5 input-ios rounded-[1.5rem] font-bold text-sm" placeholder="Full Name">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-slate-500 font-black ml-4 uppercase">Game UID</label>
+                            <input type="text" name="leader_uid" required class="w-full p-5 input-ios rounded-[1.5rem] font-bold text-sm" placeholder="Game UID">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] text-slate-500 font-black ml-4 uppercase">WhatsApp</label>
+                            <input type="text" name="leader_phone" required class="w-full p-5 input-ios rounded-[1.5rem] font-bold text-sm" placeholder="WhatsApp No">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Teammates Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Player 2 -->
+                    <div class="glass-card-ios p-8">
+                        <p class="text-[11px] font-black text-orange-400 mb-6 uppercase tracking-widest border-b border-white/5 pb-3">Teammate 02</p>
+                        <div class="space-y-4">
+                            <input type="text" name="p2_name" placeholder="Name" class="w-full p-4 input-ios rounded-2xl text-sm font-bold">
+                            <input type="text" name="p2_uid" placeholder="Game UID" class="w-full p-4 input-ios rounded-2xl text-sm font-bold">
+                            <input type="text" name="p2_phone" placeholder="Phone No" class="w-full p-4 input-ios rounded-2xl text-sm font-bold">
+                        </div>
+                    </div>
+                    <!-- Player 3 -->
+                    <div class="glass-card-ios p-8">
+                        <p class="text-[11px] font-black text-orange-400 mb-6 uppercase tracking-widest border-b border-white/5 pb-3">Teammate 03</p>
+                        <div class="space-y-4">
+                            <input type="text" name="p3_name" placeholder="Name" class="w-full p-4 input-ios rounded-2xl text-sm font-bold">
+                            <input type="text" name="p3_uid" placeholder="Game UID" class="w-full p-4 input-ios rounded-2xl text-sm font-bold">
+                            <input type="text" name="p3_phone" placeholder="Phone No" class="w-full p-4 input-ios rounded-2xl text-sm font-bold">
+                        </div>
+                    </div>
+                    <!-- Player 4 -->
+                    <div class="glass-card-ios p-8">
+                        <p class="text-[11px] font-black text-orange-400 mb-6 uppercase tracking-widest border-b border-white/5 pb-3">Teammate 04</p>
+                        <div class="space-y-4">
+                            <input type="text" name="p4_name" placeholder="Name" class="w-full p-4 input-ios rounded-2xl text-sm font-bold">
+                            <input type="text" name="p4_uid" placeholder="Game UID" class="w-full p-4 input-ios rounded-2xl text-sm font-bold">
+                            <input type="text" name="p4_phone" placeholder="Phone No" class="w-full p-4 input-ios rounded-2xl text-sm font-bold">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-10 pb-12">
+                    <button type="submit" id="submitBtn" class="w-full bg-orange-600 text-white font-black py-7 rounded-[2.5rem] shadow-[0_20px_40px_rgba(249,115,22,0.3)] text-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-4 uppercase tracking-widest">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Confirm Registration
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
     <script>
+        // Supabase Configuration
         const SB_URL = "https://psiypllbqopudppugaxe.supabase.co"; 
         const SB_KEY = "sb_publishable_PsL-7tSFu4EQU5ZHQgO6UA_Segl7g_e";
         const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
-
+        
         let currentUser = null;
-        let assignedPassword = null;
+        let squadActiveUser = null;
+        let statusPollingInterval = null;
 
-        function toast(msg) {
+        // ========== BACKGROUND POLLING SYSTEM ==========
+        
+        function startStatusPolling() {
+            // Clear any existing interval
+            if (statusPollingInterval) {
+                clearInterval(statusPollingInterval);
+            }
+            
+            // Start new polling every 8 seconds (8000ms)
+            statusPollingInterval = setInterval(async () => {
+                if (currentUser && currentUser.id) {
+                    await checkUserStatusInBackground();
+                }
+            }, 8000);
+        }
+
+        function stopStatusPolling() {
+            if (statusPollingInterval) {
+                clearInterval(statusPollingInterval);
+                statusPollingInterval = null;
+            }
+        }
+
+        async function checkUserStatusInBackground() {
+            try {
+                // Fetch latest user data from database
+                const { data, error } = await supabaseClient
+                    .from('payment_users')
+                    .select('*')
+                    .eq('id', currentUser.id)
+                    .single();
+
+                if (error || !data) {
+                    // User record not found (deleted by admin)
+                    handleUserDeleted();
+                    return;
+                }
+
+                // Compare with current session
+                const statusChanged = data.status !== currentUser.status;
+                const slotChanged = data.assigned_auth_id !== currentUser.assigned_auth_id;
+
+                if (statusChanged || slotChanged) {
+                    // Update local session
+                    currentUser = data;
+                    saveSession(currentUser);
+                    
+                    // Handle different scenarios
+                    handleStatusChange();
+                }
+            } catch (error) {
+                console.error("Background status check failed:", error);
+            }
+        }
+
+        function handleUserDeleted() {
+            stopStatusPolling();
+            localStorage.removeItem('k_army_user');
+            currentUser = null;
+            squadActiveUser = null;
+            
+            // Show appropriate message based on current screen
+            if (document.getElementById('squadPortal').classList.contains('hidden')) {
+                // In main portal
+                toast("Your account has been deleted by Admin. Please register again.", "bg-red-600");
+                showScreen('authScreen');
+                document.getElementById('navBar').classList.add('hidden');
+            } else {
+                // In squad portal - kick them out
+                toast("Account Deleted: Returning to registration", "bg-red-600");
+                document.getElementById('squadPortal').classList.add('hidden');
+                document.getElementById('mainPortal').classList.remove('hidden');
+                showScreen('authScreen');
+            }
+        }
+
+        function handleStatusChange() {
+            // Clear credentials from success screen
+            document.getElementById('displayUser').innerText = '---';
+            document.getElementById('displayPass').innerText = '---';
+            document.getElementById('hiddenUser').value = '';
+            document.getElementById('hiddenPass').value = '';
+            
+            // If admin reset booking (status changed to 'new' or slot cleared)
+            if (currentUser.status === 'new' || !currentUser.assigned_auth_id) {
+                toast("Your slot has been reset by Admin. Please submit payment again.", "bg-orange-600");
+                
+                // If in squad portal, kick them out
+                if (!document.getElementById('squadPortal').classList.contains('hidden')) {
+                    document.getElementById('squadPortal').classList.add('hidden');
+                    document.getElementById('mainPortal').classList.remove('hidden');
+                }
+                
+                showScreen('paymentScreen');
+            } 
+            // If admin rejected payment
+            else if (currentUser.status === 'rejected') {
+                toast("Payment rejected by Admin. Please try again.", "bg-red-600");
+                showScreen('paymentScreen');
+            }
+            // If status changed to pending
+            else if (currentUser.status === 'pending') {
+                toast("Payment submitted. Waiting for admin approval.", "bg-blue-600");
+                showScreen('pendingScreen');
+            }
+            // If status changed to approved
+            else if (currentUser.status === 'approved' && currentUser.assigned_auth_id) {
+                // User got approved - fetch new credentials
+                fetchAssignedCreds();
+                toast("Payment approved! Your slot is confirmed.", "bg-green-600");
+            }
+        }
+
+        // ========== MAIN PORTAL FUNCTIONS ==========
+        
+        // Session Persistence
+        window.onload = function() {
+            const session = localStorage.getItem('k_army_user');
+            if(session) {
+                currentUser = JSON.parse(session);
+                checkStatus(true); // Silent status check
+                startStatusPolling(); // Start background polling
+            }
+        };
+
+        function saveSession(user) {
+            localStorage.setItem('k_army_user', JSON.stringify(user));
+        }
+
+        function handleLogout() {
+            stopStatusPolling();
+            localStorage.removeItem('k_army_user');
+            currentUser = null;
+            squadActiveUser = null;
+            
+            // If in squad portal, go back to main first
+            if (!document.getElementById('squadPortal').classList.contains('hidden')) {
+                document.getElementById('squadPortal').classList.add('hidden');
+                document.getElementById('mainPortal').classList.remove('hidden');
+            }
+            
+            location.reload();
+        }
+
+        function toast(msg, color='bg-green-600') {
             const t = document.getElementById('toast');
-            t.innerText = msg; t.classList.remove('hidden');
-            setTimeout(() => t.classList.add('hidden'), 3000);
+            t.innerText = msg;
+            t.className = `fixed top-5 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-xl font-bold text-center shadow-2xl text-white ${color}`;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 4000);
         }
 
         function toggleAuth(type) {
-            if(type === 'signup') {
-                document.getElementById('signupForm').classList.remove('hidden');
-                document.getElementById('loginForm').classList.add('hidden');
-                document.getElementById('tabSign').className = "flex-1 py-2 rounded-lg font-bold text-sm bg-orange-600 text-white transition-all";
-                document.getElementById('tabLog').className = "flex-1 py-2 rounded-lg font-bold text-sm text-slate-400 hover:text-white transition-all";
-            } else {
-                document.getElementById('signupForm').classList.add('hidden');
-                document.getElementById('loginForm').classList.remove('hidden');
-                document.getElementById('tabLog').className = "flex-1 py-2 rounded-lg font-bold text-sm bg-orange-600 text-white transition-all";
-                document.getElementById('tabSign').className = "flex-1 py-2 rounded-lg font-bold text-sm text-slate-400 hover:text-white transition-all";
+            document.getElementById('signupForm').classList.toggle('hidden', type === 'login');
+            document.getElementById('loginForm').classList.toggle('hidden', type === 'signup');
+        }
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('imgPrev').src = e.target.result;
+                    document.getElementById('imgPrev').classList.remove('hidden');
+                    document.getElementById('fileLabel').innerText = "Image Selected";
+                }
+                reader.readAsDataURL(input.files[0]);
             }
         }
 
-        document.getElementById('signupForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('sName').value;
-            const phone = document.getElementById('sPhone').value;
-            const pass = document.getElementById('sPass').value;
+        function copyToClipboard(text) {
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = text;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+        }
 
-            const { data: exists } = await supabaseClient.from('payment_users').select('*').eq('phone_number', phone).single();
-            if(exists) return toast("Number already registered! Please Login.");
+        function copyField(id, label) {
+            copyToClipboard(document.getElementById(id).innerText);
+            toast(label + " Copied!");
+        }
+
+        async function handleSignup() {
+            const name = document.getElementById('regName').value;
+            const phone = document.getElementById('regPhone').value;
+            const pass = document.getElementById('regPass').value;
+            if(!name || !phone || !pass) return toast("Fill all fields!", "bg-red-600");
 
             const { data, error } = await supabaseClient.from('payment_users').insert([{
-                full_name: name, phone_number: phone, password: pass
-            }]).select().single();
+                full_name: name, phone_number: phone, password: pass, status: 'new'
+            }]).select();
 
-            if(error) { toast("Error: " + error.message); }
-            else {
-                currentUser = data;
-                showDashboard();
+            if(error) {
+                console.error("Signup error:", error);
+                return toast("Registration failed: " + error.message, "bg-red-600");
             }
-        };
+            
+            currentUser = data[0];
+            saveSession(currentUser);
+            showScreen('paymentScreen');
+            document.getElementById('navBar').classList.remove('hidden');
+            startStatusPolling();
+        }
 
-        document.getElementById('loginForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const phone = document.getElementById('lPhone').value;
-            const pass = document.getElementById('lPass').value;
-
+        async function handleLogin() {
+            const phone = document.getElementById('loginPhone').value;
+            const pass = document.getElementById('loginPass').value;
             const { data, error } = await supabaseClient.from('payment_users').select('*').eq('phone_number', phone).eq('password', pass).single();
 
-            if(error || !data) { toast("Invalid Credentials!"); }
-            else {
-                currentUser = data;
-                showDashboard();
-            }
-        };
-
-        function showDashboard() {
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('dashboardSection').classList.remove('hidden');
-            checkUserStatus();
-        }
-
-        async function checkUserStatus() {
-            const { data } = await supabaseClient.from('payment_users').select('*').eq('id', currentUser.id).single();
+            if(error || !data) return toast("Invalid Credentials", "bg-red-600");
             currentUser = data;
-
-            const status = currentUser.status;
-            document.getElementById('pendingView').classList.add('hidden');
-            document.getElementById('reviewView').classList.add('hidden');
-            document.getElementById('approvedView').classList.add('hidden');
-
-            if(status === 'pending') {
-                if(currentUser.trx_id) {
-                    document.getElementById('reviewView').classList.remove('hidden');
-                } else {
-                    document.getElementById('pendingView').classList.remove('hidden');
-                }
-            } else if (status === 'approved') {
-                document.getElementById('approvedView').classList.remove('hidden');
-                document.getElementById('assignedID').innerText = currentUser.assigned_auth_id;
-                fetchAssignedPass(currentUser.assigned_auth_id);
-            }
+            saveSession(currentUser);
+            checkStatus();
+            startStatusPolling();
         }
 
-        async function fetchAssignedPass(authId) {
-            const { data } = await supabaseClient.from('squad_auth').select('password').eq('user_id', authId).single();
+        async function checkLatestStatus() {
+            const { data } = await supabaseClient.from('payment_users').select('*').eq('id', currentUser.id).single();
             if(data) {
-                assignedPassword = data.password;
-                document.getElementById('assignedPass').innerText = data.password;
+                currentUser = data;
+                saveSession(currentUser);
+                checkStatus();
+                toast("Status Updated!");
             }
         }
 
-        document.getElementById('paymentForm').onsubmit = async (e) => {
+        function checkStatus(silent = false) {
+            if(!currentUser) return;
+            document.getElementById('navBar').classList.remove('hidden');
+            
+            if(currentUser.status === 'new') showScreen('paymentScreen');
+            else if(currentUser.status === 'pending') showScreen('pendingScreen');
+            else if(currentUser.status === 'approved') fetchAssignedCreds();
+            else if(currentUser.status === 'rejected') {
+                toast("Application Rejected", "bg-red-600");
+                showScreen('paymentScreen');
+            }
+            
+            if(!silent) toast("Welcome Back!");
+        }
+
+        async function fetchAssignedCreds() {
+            if(!currentUser.assigned_auth_id) return showScreen('pendingScreen');
+            
+            try {
+                const { data } = await supabaseClient.from('squad_auth').select('password').eq('user_id', currentUser.assigned_auth_id).single();
+                
+                document.getElementById('displayUser').innerText = currentUser.assigned_auth_id;
+                document.getElementById('displayPass').innerText = data ? data.password : "---";
+                document.getElementById('hiddenUser').value = currentUser.assigned_auth_id;
+                document.getElementById('hiddenPass').value = data ? data.password : "";
+                showScreen('successScreen');
+            } catch (error) {
+                toast("Error fetching credentials", "bg-red-600");
+                showScreen('pendingScreen');
+            }
+        }
+
+        function showScreen(id) {
+            ['authScreen', 'paymentScreen', 'pendingScreen', 'successScreen'].forEach(s => document.getElementById(s).classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        document.getElementById('payForm').onsubmit = async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('payBtn');
+            const btn = document.getElementById('submitPayBtn');
             btn.disabled = true; btn.innerText = "Uploading...";
 
-            const file = document.getElementById('pScreen').files[0];
-            const sender = document.getElementById('pSender').value;
-            const trx = document.getElementById('pTrx').value;
-            const method = document.getElementById('pMethod').value;
+            const file = document.getElementById('screenshot').files[0];
+            if (!file) {
+                btn.disabled = false; 
+                btn.innerText = "Verify Payment";
+                return toast("Please upload payment screenshot", "bg-red-600");
+            }
 
-            const fileName = `proof_${Date.now()}_${currentUser.phone_number}`;
-            const { data: imgData, error: imgError } = await supabaseClient.storage.from('payment_proofs').upload(fileName, file);
+            const fileName = `${Date.now()}_${currentUser.phone_number}`;
+            const { error: imgError } = await supabaseClient.storage.from('payment_proofs').upload(fileName, file);
 
-            if(imgError) {
-                toast("Upload Failed: " + imgError.message);
-                btn.disabled = false; btn.innerText = "Submit Verification";
-                return;
+            if(imgError) { 
+                btn.disabled = false; 
+                btn.innerText = "Verify Payment";
+                return toast("Upload Failed: " + imgError.message, "bg-red-600"); 
             }
 
             const imgUrl = `https://psiypllbqopudppugaxe.supabase.co/storage/v1/object/public/payment_proofs/${fileName}`;
-
-            const { error } = await supabaseClient.from('payment_users').update({
-                payment_method: method, account_name: sender, trx_id: trx, screenshot_url: imgUrl
+            const { error: dbError } = await supabaseClient.from('payment_users').update({
+                payment_method: document.getElementById('payMethod').value,
+                account_name: document.getElementById('senderName').value,
+                trx_id: document.getElementById('trxId').value,
+                screenshot_url: imgUrl,
+                status: 'pending'
             }).eq('id', currentUser.id);
 
-            if(!error) {
-                toast("Submitted Successfully!");
-                checkUserStatus();
+            if(!dbError) {
+                currentUser.status = 'pending';
+                saveSession(currentUser);
+                showScreen('pendingScreen');
+                toast("Payment submitted successfully!");
             } else {
-                toast("Database Error");
+                toast("Submission failed: " + dbError.message, "bg-red-600");
             }
+            
+            btn.disabled = false;
+            btn.innerText = "Verify Payment";
         };
 
-        // FIXED CLIPBOARD LOGIC FOR IFRAMES
-        window.openSquadPortal = () => {
-            const u = currentUser.assigned_auth_id;
-            const p = assignedPassword;
-            const targetUrl = `https://userspotral.vercel.app/?uid=${u}&pass=${p}`;
+        function goToSquadPortal() {
+            const creds = `ID: ${document.getElementById('hiddenUser').value}\nPass: ${document.getElementById('hiddenPass').value}`;
+            copyToClipboard(creds);
+            toast("Credentials Copied! Opening Portal...");
             
-            // Legacy fallback using document.execCommand('copy') which is more reliable in frames
-            const copyHelper = document.getElementById('copyHelper');
-            copyHelper.value = `ID: ${u}\nPass: ${p}`;
-            copyHelper.select();
+            // Switch to Squad Portal
+            document.getElementById('mainPortal').classList.add('hidden');
+            document.getElementById('squadPortal').classList.remove('hidden');
             
+            // Auto-fill credentials if available
+            document.getElementById('authId').value = document.getElementById('hiddenUser').value;
+            document.getElementById('authPass').value = document.getElementById('hiddenPass').value;
+        }
+
+        // ========== SQUAD PORTAL FUNCTIONS ==========
+        
+        function goBackToMain() {
+            document.getElementById('squadPortal').classList.add('hidden');
+            document.getElementById('mainPortal').classList.remove('hidden');
+        }
+
+        function showStatus(msg, isError = false) {
+            const box = document.getElementById('statusBox');
+            box.innerText = msg;
+            box.className = `fixed top-6 inset-x-6 md:inset-x-auto md:right-6 md:w-80 z-[100] p-6 rounded-[2.5rem] shadow-2xl text-white font-black transition-all text-center backdrop-blur-xl ${isError ? 'bg-red-500/80' : 'bg-orange-600/80 border border-orange-500/30'}`;
+            box.classList.remove('hidden');
+            setTimeout(() => box.classList.add('hidden'), 3500);
+        }
+
+        async function handleSquadLogin() {
+            const id = document.getElementById('authId').value.toUpperCase().trim();
+            const pass = document.getElementById('authPass').value;
+            const loginBtn = document.getElementById('loginBtn');
+            
+            if(!id || !pass) return showStatus("Enter Credentials!", true);
+            
+            loginBtn.disabled = true;
+            loginBtn.innerText = "AUTHENTICATING...";
+
+            const { data, error } = await supabaseClient
+                .from('squad_auth')
+                .select('*')
+                .eq('user_id', id)
+                .eq('password', pass)
+                .single();
+
+            if (error || !data) {
+                showStatus("Access Denied: Check ID/Password", true);
+                loginBtn.disabled = false;
+                loginBtn.innerText = "Verify Identity";
+            } else {
+                squadActiveUser = id; // Correctly set squadActiveUser
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('mainSection').classList.remove('hidden');
+                document.getElementById('currentUserDisplay').innerText = id;
+                loadExistingData();
+            }
+        }
+
+        async function loadExistingData() {
             try {
-                document.execCommand('copy');
-                toast("ID/Pass Copy Don! Portal di open...");
-            } catch (err) {
-                console.error("Copy fail", err);
+                const { data, error } = await supabaseClient
+                    .from('squad_registrations')
+                    .select('*')
+                    .eq('auth_user_id', squadActiveUser)
+                    .single();
+
+                if (!error && data) {
+                    const form = document.getElementById('regForm');
+                    Object.keys(data).forEach(key => {
+                        if (form.elements[key]) {
+                            form.elements[key].value = data[key];
+                        }
+                    });
+                    document.getElementById('submitBtn').innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Update Registration
+                    `;
+                    showStatus("Previous Data Loaded!");
+                }
+            } catch (error) {
+                console.error("Error loading existing data:", error);
+            }
+        }
+
+        // FIXED SQUAD REGISTRATION SUBMISSION
+        document.getElementById('regForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true; 
+            btn.innerText = "Securing Connection...";
+
+            // Collect form data
+            const formData = new FormData(e.target);
+            const submissionData = Object.fromEntries(formData.entries());
+            
+            // Add auth_user_id (critical fix)
+            submissionData.auth_user_id = squadActiveUser;
+
+            try {
+                // Check if registration already exists
+                const { data: existing, error: checkError } = await supabaseClient
+                    .from('squad_registrations')
+                    .select('id')
+                    .eq('auth_user_id', squadActiveUser)
+                    .maybeSingle(); // Use maybeSingle instead of single
+
+                let result;
+                
+                if (existing && existing.id) {
+                    // Update existing record
+                    result = await supabaseClient
+                        .from('squad_registrations')
+                        .update(submissionData)
+                        .eq('auth_user_id', squadActiveUser);
+                } else {
+                    // Insert new record
+                    result = await supabaseClient
+                        .from('squad_registrations')
+                        .insert([submissionData]);
+                }
+
+                if (result.error) {
+                    showStatus("Sync Failed: " + result.error.message, true);
+                    console.error("Database error:", result.error);
+                } else {
+                    showStatus("Registration Data Saved Successfully!");
+                    btn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Update Registration
+                    `;
+                }
+            } catch (error) {
+                showStatus("Connection Error: Try again", true);
+                console.error("Submission error:", error);
             }
             
-            setTimeout(() => {
-                window.open(targetUrl, '_blank');
-            }, 800);
+            btn.disabled = false;
         };
+
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !document.getElementById('loginSection').classList.contains('hidden')) {
+                handleSquadLogin();
+            }
+        });
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            stopStatusPolling();
+        });
     </script>
 </body>
 </html>
